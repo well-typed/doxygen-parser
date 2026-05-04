@@ -1,11 +1,35 @@
--- | Doxygen XML parser for C\/C++ header documentation
+-- | Public API for parsing Doxygen XML output into a typed Haskell AST.
 --
--- This module provides a high-level interface to invoke the @doxygen@ binary
--- on C\/C++ header files and parse the resulting XML output into a typed
--- Haskell AST.  The @doxygen@ binary must be available on @PATH@ (or
+-- = Overview
+--
+-- 'parse' invokes the @doxygen@ binary on a non-empty list of C\/C++
+-- header files, walks the resulting @xml\/@ directory, and assembles a
+-- 'Doxygen' value that maps each documented entity to a structured
+-- 'Comment' tree.  The @doxygen@ binary must be available on @PATH@ (or
 -- configured via 'Config').
 --
--- Implementation details are in "Doxygen.Parser.Internal".
+-- = Quick start
+--
+-- @
+-- import "Doxygen.Parser"
+-- import Data.List.NonEmpty (NonEmpty (..))
+--
+-- main :: IO ()
+-- main = do
+--     'Result'{doxygen, warnings, doxygenVersion} \<-
+--         'parse' 'defaultConfig' (\"myheader.h\" :| [])
+--     mapM_ print warnings
+--     print ('lookupComment' ('DoxygenKey' \"myFunc\") doxygen)
+-- @
+--
+-- 'parse' throws 'DoxygenException' if the @doxygen@ invocation itself
+-- fails; recoverable problems (unknown XML elements, malformed refs,
+-- etc.) are returned as 'Warning's in the 'Result'.
+--
+-- = Stability
+--
+-- This module, "Doxygen.Parser.Types", and "Doxygen.Parser.Warning"
+-- form the supported public API.
 --
 module Doxygen.Parser (
     -- * Configuration

@@ -1,6 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
--- | Doxygen XML parser — internal implementation
+{-# OPTIONS_HADDOCK hide #-}
+
+-- | Doxygen XML parser — internal implementation.
 --
 -- This module contains the full implementation of the Doxygen XML parser.
 -- The public API is re-exported by "Doxygen.Parser"; this module additionally

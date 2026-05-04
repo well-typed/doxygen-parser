@@ -3,17 +3,32 @@ name:            doxygen-parser
 version:         0.1.0
 license:         BSD-3-Clause
 license-file:    LICENSE
+copyright:       2024-2026 Well-Typed LLP, Anduril Industries Inc.
 author:          Well-Typed LLP
 maintainer:      info@well-typed.com
-category:        Development
+homepage:        https://github.com/well-typed/doxygen-parser
+bug-reports:     https://github.com/well-typed/doxygen-parser/issues
+category:        Development, Documentation, Parsing
 build-type:      Simple
 synopsis:        Parse Doxygen XML output into a typed Haskell AST
 description:
   A standalone library for invoking the @doxygen@ binary on C\/C++ headers
-  and parsing its XML output into a typed Haskell AST. The @doxygen@
-  executable must be installed separately.
+  and turning its XML output into a typed Haskell AST.
+  .
+  The library spawns @doxygen@ on a set of header files, walks the resulting
+  @xml\/@ directory, and assembles a 'Doxygen.Parser.Doxygen' value mapping
+  each documented C entity to a structured 'Doxygen.Parser.Comment' tree
+  (with paragraphs, inline markup, parameter docs, group memberships, and
+  cross-references).
+  .
+  See the "Doxygen.Parser" module for the public API and the project
+  README for a quick-start example. The @doxygen@ executable must be
+  installed separately.
 
-extra-doc-files: CHANGELOG.md
+extra-doc-files:
+  CHANGELOG.md
+  README.md
+
 tested-with:
   GHC ==9.2.8
    || ==9.4.8
@@ -22,6 +37,10 @@ tested-with:
    || ==9.10.3
    || ==9.12.2
    || ==9.14.1
+
+source-repository head
+  type:     git
+  location: https://github.com/well-typed/doxygen-parser
 
 common lang
   ghc-options:
@@ -37,11 +56,11 @@ common lang
     OverloadedRecordDot
     OverloadedStrings
 
-library
+library internal
   import:          lang
-  hs-source-dirs:  src
+  visibility:      private
+  hs-source-dirs:  src-internal
   exposed-modules:
-    Doxygen.Parser
     Doxygen.Parser.Internal
     Doxygen.Parser.Types
     Doxygen.Parser.Warning
@@ -55,15 +74,42 @@ library
     , text         >=1.2     && <2.2
     , xml-conduit  >=1.9     && <1.11
 
+library
+  import:             lang
+  hs-source-dirs:     src
+  exposed-modules:    Doxygen.Parser
+  reexported-modules:
+    , Doxygen.Parser.Types
+    , Doxygen.Parser.Warning
+
+  build-depends:      doxygen-parser:internal
+
 test-suite test-doxygen-parser
   import:         lang
   type:           exitcode-stdio-1.0
   hs-source-dirs: test
   main-is:        Main.hs
   ghc-options:    -threaded
+  other-modules:
+    Test.Doxygen.Parser.Block
+    Test.Doxygen.Parser.CodeBlock
+    Test.Doxygen.Parser.Comment
+    Test.Doxygen.Parser.Helpers
+    Test.Doxygen.Parser.InlineNesting
+    Test.Doxygen.Parser.InlineParsing
+    Test.Doxygen.Parser.List
+    Test.Doxygen.Parser.NormalizeWhitespace
+    Test.Doxygen.Parser.Param
+    Test.Doxygen.Parser.Properties
+    Test.Doxygen.Parser.SimpleSect
+    Test.Doxygen.Parser.StructuralWarnings
+    Test.Doxygen.Parser.Whitespace
+    Test.Doxygen.Parser.XMLFileResult
 
   -- Internal dependencies
-  build-depends:  doxygen-parser
+  build-depends:
+    , doxygen-parser
+    , doxygen-parser:internal
 
   -- External dependencies
   build-depends:

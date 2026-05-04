@@ -1,0 +1,184 @@
+name: "Windows tests"
+
+# Notes:
+#
+# * Windows dynamically loads libraries (DLLs) by searching for them in the
+#   `PATH`. Make sure that `PATH` is configured correctly when executing
+#   programs.
+# * The `PATH` must be configured with Windows-style paths. Use `cygpath` to
+#   convert paths when necessary.
+#
+# Maintenance:
+#
+# * Configure supported GHC versions in
+#   `on.workflow_dispatch.inputs.ghc_versions.default`.
+# * Configure GHC versions tested on pull requests in
+#   `jobs.setup.steps.("Setup GHC versions (PR)")`. This should generally be
+#   a subset of the supported versions.
+# * Configure GHC versions tested on merge/push in
+#   `jobs.setup.steps.("Setup GHC versions (MQ and push to main)")`. This
+#   should generally be all supported versions.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      ghc_versions:
+        description: "Comma-separated list of GHC version strings"
+        default: '"9.2","9.4","9.6","9.8","9.10","9.12","9.14"'
+        required: true
+      enable_cache:
+        description: "Enable cache (restore and save)"
+        default: "true"
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    name: "Windows: Setup"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Setup GHC versions (PR)"
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo GHC_VERSIONS='"9.4","9.14"' | tee -a "${GITHUB_ENV}"
+
+      - name: "Setup GHC versions (MQ and push to main)"
+        if: ${{ github.event_name == 'merge_group' || github.event_name == 'push' }}
+        run: echo GHC_VERSIONS='"9.2","9.4","9.6","9.8","9.10","9.12","9.14"' | tee -a "${GITHUB_ENV}"
+
+      - name: "Setup GHC versions (dispatch)"
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: echo GHC_VERSIONS='${{ inputs.ghc_versions }}' | tee -a "${GITHUB_ENV}"
+
+      - name: "Setup matrix"
+        id: setup-matrix
+        run: echo "matrix={\"ghc\":[ ${GHC_VERSIONS} ]}" | tee -a "${GITHUB_OUTPUT}"
+
+  check-success:
+    name: "Windows: Check success"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    needs:
+      - build-and-test
+
+    defaults:
+      run:
+        shell: bash
+
+    if: ${{ !cancelled() }}
+
+    steps:
+      - name: "Report failure"
+        if: ${{ needs.build-and-test.result == 'failure' }}
+        run: |
+          echo "Some jobs failed"
+          exit 1
+
+      - name: "Report success"
+        if: ${{ needs.build-and-test.result == 'success'  }}
+        run: |
+          echo "All jobs succeeded"
+          exit 0
+
+  build-and-test:
+    name: "Windows: GHC ${{ matrix.ghc }}"
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    needs:
+      - setup
+
+    strategy:
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      fail-fast: false
+
+    env:
+      cache-reset-number: 0
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "[checkout] Configure git to use LF"
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
+      - name: "[checkout] Checkout repository"
+        uses: actions/checkout@v6
+
+      - name: "[setup] Setup Haskell"
+        id: setup-haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: 3.16
+
+      - name: "[setup] Debug Haskell"
+        run: |
+          echo '== which ghc ==================================================================='
+          which ghc
+          echo '== ghc --version ==============================================================='
+          ghc --version
+          echo '== ghc-pkg list ================================================================'
+          ghc-pkg list
+
+      - name: "[setup] Install doxygen"
+        uses: ./.github/actions/setup-doxygen
+
+      - name: "[setup] Configure project"
+        run: |
+          cabal configure \
+            --enable-tests \
+            --enable-benchmarks \
+            --disable-documentation \
+            --ghc-options="-Werror"
+          cat cabal.project.local
+
+      - name: "[setup] Generate Cabal plan"
+        run: cabal build all --dry-run
+
+      - name: "[setup] Restore cache"
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.enable_cache == 'true' }}
+        id: restore-cache
+        uses: actions/cache/restore@v5
+        env:
+          key: build-and-test-${{ env.cache-reset-number }}-windows-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ steps.setup-haskell.outputs.cabal-version }}
+        with:
+          path: ${{ steps.setup-haskell.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('dist-newstyle/cache/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: "[build] Build dependencies"
+        run: cabal build all --only-dependencies
+
+      - name: "[build] Save cache"
+        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.enable_cache == 'true') && (steps.restore-cache.outputs.cache-hit != 'true') }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ steps.setup-haskell.outputs.cabal-store }}
+          key: ${{steps.restore-cache.outputs.cache-primary-key }}
+
+      - name: "[build] Build all"
+        run: cabal build all
+
+      - name: "[test] Test all"
+        run: cabal test -j1 all --test-show-details=direct
