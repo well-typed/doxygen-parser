@@ -11,6 +11,9 @@
 -- = Quick start
 --
 -- @
+-- {-\# LANGUAGE NamedFieldPuns    \#-}
+-- {-\# LANGUAGE OverloadedStrings \#-}
+--
 -- import "Doxygen.Parser"
 -- import Data.List.NonEmpty (NonEmpty (..))
 --
@@ -19,7 +22,7 @@
 --     'Result'{doxygen, warnings, doxygenVersion} \<-
 --         'parse' 'defaultConfig' (\"myheader.h\" :| [])
 --     mapM_ print warnings
---     print ('lookupComment' ('DoxygenKey' \"myFunc\") doxygen)
+--     print ('lookupComment' ('KeyDecl' \"myFunc\") doxygen)
 -- @
 --
 -- 'parse' throws 'DoxygenException' if the @doxygen@ invocation itself
