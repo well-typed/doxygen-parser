@@ -10,7 +10,7 @@
 
 ### Bug fixes
 
-## 0.1.0 -- Unreleased
+## 0.1.0 -- 2026-06-18
 
 * First version. Extracted from
   [`hs-bindgen`](https://github.com/well-typed/hs-bindgen). See

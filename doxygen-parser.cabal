@@ -3,7 +3,7 @@ name:            doxygen-parser
 version:         0.1.0
 license:         BSD-3-Clause
 license-file:    LICENSE
-copyright:       2024-2026 Well-Typed LLP, Anduril Industries Inc.
+copyright:       2024-2026 Well-Typed LLP and Anduril Industries Inc.
 author:          Well-Typed LLP
 maintainer:      info@well-typed.com
 homepage:        https://github.com/well-typed/doxygen-parser
@@ -14,13 +14,13 @@ synopsis:        Parse Doxygen XML output into a typed Haskell AST
 description:
   A standalone library for invoking the @doxygen@ binary on C\/C++ headers
   and turning its XML output into a typed Haskell AST.
-  .
+
   The library spawns @doxygen@ on a set of header files, walks the resulting
   @xml\/@ directory, and assembles a 'Doxygen.Parser.Doxygen' value mapping
   each documented C entity to a structured 'Doxygen.Parser.Comment' tree
   (with paragraphs, inline markup, parameter docs, group memberships, and
   cross-references).
-  .
+
   See the "Doxygen.Parser" module for the public API and the project
   README for a quick-start example. The @doxygen@ executable must be
   installed separately.
