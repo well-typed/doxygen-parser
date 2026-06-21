@@ -11,6 +11,8 @@
 -- * 'Inline' represents inline formatting and cross-references
 -- * 'Param' represents documented parameters with direction
 --
+-- It also provides 'DoxygenKey', the key used to index parsed comments.
+--
 -- Intended for qualified import:
 --
 -- @
@@ -30,6 +32,8 @@ module Doxygen.Parser.Types (
   , ParamListKind(..)
   , ParamDirection(..)
   , SimpleSectKind(..)
+    -- * Lookup keys
+  , DoxygenKey(..)
   ) where
 
 import Data.Text (Text)
@@ -206,3 +210,23 @@ data DoxyRef = DoxyRef {
     -- ^ The @kindref@ attribute, when Doxygen records it.
   }
   deriving stock (Show, Eq, Generic)
+
+{-------------------------------------------------------------------------------
+  Lookup keys
+-------------------------------------------------------------------------------}
+
+-- | Key for looking up a comment in the parsed @Doxygen@ state.
+--
+-- Unifies the four separate map lookups (declarations, structs, fields,
+-- enum values) into a single @Map@ keyed by this type.
+--
+data DoxygenKey
+  = KeyDecl { name :: Text }
+    -- ^ Function, typedef, variable, or enum (keyed by C name)
+  | KeyStruct { name :: Text }
+    -- ^ Struct\/union compound (keyed by C type name)
+  | KeyField { structName :: Text, fieldName :: Text }
+    -- ^ Struct\/union field
+  | KeyEnumValue { enumName :: Text, valueName :: Text }
+    -- ^ Enum value
+  deriving stock (Eq, Ord, Show)
