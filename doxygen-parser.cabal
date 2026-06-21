@@ -1,6 +1,6 @@
 cabal-version:   3.0
 name:            doxygen-parser
-version:         0.1.0
+version:         0.1.1
 license:         BSD-3-Clause
 license-file:    LICENSE
 copyright:       2024-2026 Well-Typed LLP and Anduril Industries Inc.
