@@ -103,6 +103,7 @@ test-suite test-doxygen-parser
     Test.Doxygen.Parser.Block
     Test.Doxygen.Parser.CodeBlock
     Test.Doxygen.Parser.Comment
+    Test.Doxygen.Parser.Config
     Test.Doxygen.Parser.Helpers
     Test.Doxygen.Parser.InlineNesting
     Test.Doxygen.Parser.InlineParsing

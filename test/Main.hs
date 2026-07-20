@@ -5,6 +5,7 @@ import Test.Tasty
 import Test.Doxygen.Parser.Block qualified as Block
 import Test.Doxygen.Parser.CodeBlock qualified as CodeBlock
 import Test.Doxygen.Parser.Comment qualified as Comment
+import Test.Doxygen.Parser.Config qualified as Config
 import Test.Doxygen.Parser.InlineNesting qualified as InlineNesting
 import Test.Doxygen.Parser.InlineParsing qualified as InlineParsing
 import Test.Doxygen.Parser.List qualified as List
@@ -31,5 +32,6 @@ main =
       , testGroup "code block parsing"     CodeBlock.tests
       , testGroup "structural warnings"    StructuralWarnings.tests
       , testGroup "XMLFileResult assembly" XMLFileResult.tests
+      , testGroup "doxyfile generation"    Config.tests
       , testGroup "properties"             Properties.tests
       ]

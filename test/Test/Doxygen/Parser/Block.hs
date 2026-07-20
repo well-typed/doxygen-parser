@@ -103,4 +103,29 @@ tests =
       case bs of
         [Tag tag _children] -> tag @?= "sect1"
         _ -> assertFailure $ "expected Tag: " ++ show bs
+
+  , testCase "title parses children as inlines without warning" $
+      blockShouldMatch "<title>Heading</title>" $ \b ->
+        b @?= Tag "title" [Paragraph [Text "Heading"]]
+
+  , testCase "sect1 title survives with inline markup" $ do
+      let (ws, bs) = parseBlockFromXML $ wrap $ Text.concat
+            [ "<sect1>"
+            , "<title>See <bold>this</bold></title>"
+            , "<para>Body</para>"
+            , "</sect1>"
+            ]
+      -- <sect1> itself is still an unknown block (one warning); its <title>
+      -- child no longer warns, and the heading text is preserved.
+      case ws of
+        [w] -> w.element @?= "sect1"
+        _   -> assertFailure $ "expected exactly 1 warning, got: " ++ show ws
+      bs @?= [Tag "sect1"
+               [ Tag "title" [Paragraph [Text "See ", Bold [Text "this"]]]
+               , Paragraph [Text "Body"]
+               ]]
+
+  , testCase "whitespace-only title produces empty title Tag" $
+      blockShouldMatch "<title>   </title>" $ \b ->
+        b @?= Tag "title" []
   ]

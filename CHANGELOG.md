@@ -6,9 +6,15 @@
 
 ### New features
 
+* Support Doxygen custom ALIASES, which allows doc substitution in projects that
+  rely on it.
+
 ### Minor changes
 
 ### Bug fixes
+
+* Parse `title` children with the inline parser so that section headings (`\section`
+  or markdown `#`) are no longer dropped.
 
 ## 0.1.1 -- 2026-06-21
 

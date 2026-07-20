@@ -38,6 +38,14 @@ tests =
           SimpleSect (SSPar title) _ -> title @?= "My Title"
           b -> assertFailure $ "expected SSPar: " ++ show b
 
+  , testCase "par title is consumed, not re-parsed as a title block" $
+      blockShouldMatch
+        ("<simplesect kind=\"par\">"
+         <> "<title>Thread safety:</title>"
+         <> "<para>Safe</para>"
+         <> "</simplesect>") $ \b ->
+        b @?= SimpleSect (SSPar "Thread safety:") [Paragraph [Text "Safe"]]
+
   , testCase "unknown kind defaults to SSNote with warning" $ do
       let (ws, bs) = parseBlockFromXML
             (wrap "<simplesect kind=\"bogus\"><para>X</para></simplesect>")
