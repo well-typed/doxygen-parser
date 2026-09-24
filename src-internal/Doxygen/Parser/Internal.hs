@@ -59,6 +59,7 @@ module Doxygen.Parser.Internal (
   , parseInlineChildren
   , normalizeWhitespace
   , trimEdges
+  , stripAnonymousSuffix
   , XMLFileResult(..)
   , extractEntity
   , nodeElementName
@@ -573,11 +574,15 @@ extractEntity cd =
     -- For struct/union compounds, all members are fields of that struct.
     -- For other compounds (groups, files), fields are identified by their
     -- <qualifiedname> (e.g. "config_t::id" → KeyField "config_t" "id").
+    --
+    -- 'stripAnonymousSuffix' normalizes compound names so that doxygen
+    -- >= 1.18.0 anonymous-struct compounds (e.g. @outer::[struct].pos@)
+    -- produce the same keys as the flattened layout used by older versions.
     toFieldMap :: Text -> Maybe Text -> [MemberInfo] -> [(DoxygenKey, Comment DoxyRef)]
     toFieldMap k mEntityName ms
       | k `elem` ["struct", "union"]
       , Just sname <- mEntityName
-      = [(KeyField sname mi.miName, mi.miComment) | mi <- ms]
+      = [(KeyField (stripAnonymousSuffix sname) mi.miName, mi.miComment) | mi <- ms]
       | otherwise
       = [ (KeyField sname fname, mi.miComment)
         | mi <- ms
@@ -1187,6 +1192,42 @@ isTitle :: Cursor -> Bool
 isTitle c = case Cursor.node c of
     XML.NodeElement el -> XML.nameLocalName (XML.elementName el) == "title"
     _                  -> False
+
+-- | Strip the anonymous compound suffix added by doxygen >= 1.18.0.
+--
+-- Given the C declaration
+--
+-- @
+-- typedef struct {
+--     struct { int ua; int ub; } pos;
+-- } outer_t;
+-- @
+--
+-- doxygen < 1.18 flattened fields @ua@ and @ub@ into
+-- @structouter__t.xml@ and keyed them as @KeyField \"outer_t\" \"ua\"@.
+--
+-- doxygen >= 1.18 emits a separate @structouter__t_1_1...pos.xml@ with
+-- compound name @\"outer_t::[struct].pos\"@, so without normalization the
+-- fields would be keyed as @KeyField \"outer_t::[struct].pos\" \"ua\"@.
+--
+-- This function strips the suffix so the keys match the pre-1.18 layout:
+--
+-- @
+-- stripAnonymousSuffix \"outer_t::[struct].pos\"          == \"outer_t\"
+-- stripAnonymousSuffix \"outer_t::[struct].__unnamed0__\" == \"outer_t\"
+-- stripAnonymousSuffix \"a::b::[union].data\"             == \"a::b\"
+-- stripAnonymousSuffix \"plain_t\"                        == \"plain_t\"
+-- @
+--
+-- With doxygen < 1.18 these patterns never appear, so the function is
+-- the identity.
+stripAnonymousSuffix :: Text -> Text
+stripAnonymousSuffix name =
+    case Text.breakOn "::[struct]." name of
+      (before, after) | not (Text.null after) -> before
+      _ -> case Text.breakOn "::[union]." name of
+        (before, after) | not (Text.null after) -> before
+        _ -> name
 
 -- | Check if a @\<memberdef\>@ is a struct\/union field.
 --

@@ -115,4 +115,19 @@ tests =
         , "</doxygen>"
         ]) $ \result ->
           result.comments @?= Map.empty
+
+  , testCase "anonymous struct fields keyed under parent (doxygen >= 1.18)" $
+      withExtractedEntity
+        (mkDoxygen $ mkCompound "struct"
+            "structfoo_1_1anon" "foo_t::[struct].__unnamed0__" "" $
+            mkSection "public-attrib" $ Text.concat
+                [ mkMember "variable" "f_ua" "ua" "Unnamed inner a" ""
+                , mkMember "variable" "f_ub" "ub" "Unnamed inner b" ""
+                ]) $ \result -> do
+          assertBool "field ua keyed under parent" $
+            Map.member (KeyField "foo_t" "ua") result.comments
+          assertBool "field ub keyed under parent" $
+            Map.member (KeyField "foo_t" "ub") result.comments
+          assertBool "NOT keyed under anonymous compound" $
+            not (Map.member (KeyField "foo_t::[struct].__unnamed0__" "ua") result.comments)
   ]
