@@ -10,6 +10,12 @@
 
 ### Bug fixes
 
+* Handle doxygen >= 1.18.0 anonymous struct/union compounds. Doxygen 1.18.0
+  emits a separate XML file for each anonymous compound instead of flattening
+  its fields into the enclosing struct. The parser now normalizes these compound
+  names so the `DoxygenKey` map is stable across doxygen versions.
+  ([hs-bindgen#2225](https://github.com/well-typed/hs-bindgen/issues/2225))
+
 ## 0.1.1 -- 2026-06-21
 
 ### New features
